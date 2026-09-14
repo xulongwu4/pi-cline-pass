@@ -8,15 +8,10 @@ export const CATALOG_TIMEOUT_MS = 15_000;
 const MODELS_URL = `${API_BASE_URL}/ai/cline/models`;
 const RECOMMENDED_URL = `${API_BASE_URL}/ai/cline/recommended-models`;
 const ZERO_COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
-// Cline's free tier 403-gates on Cline client-surface headers.
-export const CLINE_FREE_HEADERS = {
-  "X-CLIENT-TYPE": "vscode",
-  "X-CLIENT-VERSION": "3.0.38",
-  "X-PLATFORM": "darwin",
-  "X-PLATFORM-VERSION": "24.1.0",
-  "X-CORE-VERSION": "0.2.0",
-} as const;
-const freeHeaders = (id: string) => (id.startsWith("cline-free/") ? { headers: { ...CLINE_FREE_HEADERS } } : {});
+// Free-tier Cline client headers are applied per-request via the
+// before_provider_headers hook (see headers.ts), not baked into models —
+// the CLI version stays fresh without rebuilding the catalog.
+export { buildFreeModelHeadersSync, getClineVersion, needsFreeModelHeaders } from "./headers.ts";
 
 type ClinePassModel = Model<"openai-completions">;
 type CatalogEntry = {
@@ -69,7 +64,6 @@ function modelFromCatalog(raw: CatalogEntry, seed: PassSeed): ClinePassModel {
     contextWindow: raw.context_length || raw.top_provider?.context_length || 128_000,
     maxTokens: raw.top_provider?.max_completion_tokens || 8_192,
     compat: { supportsDeveloperRole: false, supportsStore: false, maxTokensField: "max_tokens" },
-    ...freeHeaders(seed.id),
   };
 }
 
@@ -86,7 +80,6 @@ function fallbackModel(seed: PassSeed): ClinePassModel {
     contextWindow: 128_000,
     maxTokens: 8_192,
     compat: { supportsDeveloperRole: false, supportsStore: false, maxTokensField: "max_tokens" },
-    ...freeHeaders(seed.id),
   };
 }
 
