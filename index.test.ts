@@ -6,7 +6,7 @@ import test from "node:test";
 import type { Provider } from "@earendil-works/pi-ai";
 import { ModelRegistry, ModelRuntime } from "@earendil-works/pi-coding-agent";
 import extension, { createClinePassProvider, registerClinePassProvider } from "./index.ts";
-import { CATALOG_TIMEOUT_MS, getFallbackModels, loadModels } from "./models.ts";
+import { CATALOG_TIMEOUT_MS, CLINE_FREE_HEADERS, getFallbackModels, loadModels } from "./models.ts";
 
 const catalog = {
   data: [
@@ -25,7 +25,7 @@ const catalog = {
   ],
 };
 const recommended = {
-  free: [{ id: "anthropic/claude-test", name: "Claude Test" }],
+  free: [{ id: "cline-free/claude-test", name: "Claude Test" }],
   clinePass: [{ id: "cline-pass/glm-5.3", name: "GLM-5.3" }],
 };
 
@@ -45,9 +45,11 @@ test("maps the ClinePass and free catalogs", async () => {
     assert.equal(models[0].id, "cline-pass/glm-5.3");
     assert.equal(models[0].provider, "cline-pass");
     assert.equal(models[0].contextWindow, 1_000_000);
-    const free = models.find((m) => m.id === "anthropic/claude-test");
+    const free = models.find((m) => m.id === "cline-free/claude-test");
     assert.equal(free?.provider, "cline-pass");
     assert.deepEqual(free?.cost, { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
+    assert.deepEqual(free?.headers, CLINE_FREE_HEADERS, "cline-free ids carry the Cline client headers");
+    assert.equal(models[0].headers, undefined, "paid ids keep default headers");
   } finally {
     rmSync(agentDir, { recursive: true, force: true });
   }
