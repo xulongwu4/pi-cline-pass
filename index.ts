@@ -6,7 +6,6 @@ import {
 } from "@earendil-works/pi-ai/compat";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { API_BASE_URL, getFallbackModels, loadModels } from "./models.ts";
-import { buildFreeModelHeadersSync, getClineVersion, needsFreeModelHeaders } from "./headers.ts";
 
 export function createClinePassProvider(
   fetcher: typeof fetch = fetch,
@@ -36,17 +35,7 @@ export function registerClinePassProvider(
 export default function clinePassExtension(pi: ExtensionAPI): void {
   registerClinePassProvider(pi);
 
-  // The free routes require Cline-CLI identifying headers. The version is
-  // pre-warmed at session_start so this sync handler never fetches.
-  pi.on("before_provider_headers", (event, ctx) => {
-    const modelId = (ctx as { model?: { id?: string } }).model?.id ?? "";
-    if (!needsFreeModelHeaders(modelId)) return;
-    Object.assign(event.headers, buildFreeModelHeadersSync());
-  });
-
   pi.on("session_start", (_event, ctx) => {
-    // Pre-warm the Cline CLI version for the header hook.
-    void getClineVersion().catch(() => {});
     void ctx.modelRegistry.refresh({ providers: ["cline-pass"] }).then((result) => {
       for (const [provider, error] of result.errors) {
         console.warn(`[pi-cline] ${provider} refresh failed: ${error.message}`);

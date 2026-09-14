@@ -21,5 +21,5 @@
     "@types/node": "^24.0.0",
     "typescript": "^5.9.0"
   },
-  "files": ["index.ts", "models.ts", "headers.ts", "README.md"]
+  "files": ["index.ts", "models.ts", "README.md"]
 }
