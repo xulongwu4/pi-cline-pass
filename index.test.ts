@@ -37,14 +37,17 @@ test("allows 15 seconds for the live ClinePass catalog", () => {
   assert.equal(CATALOG_TIMEOUT_MS, 15_000);
 });
 
-test("maps only the ClinePass catalog", async () => {
+test("maps the ClinePass and free catalogs", async () => {
   const agentDir = mkdtempSync(join(tmpdir(), "pi-cline-map-"));
   try {
     const models = await loadModels(fakeFetch, agentDir);
-    assert.equal(models.length, 1, "generic free Cline models are excluded");
+    assert.equal(models.length, 2, "ClinePass and free models are included");
     assert.equal(models[0].id, "cline-pass/glm-5.3");
     assert.equal(models[0].provider, "cline-pass");
     assert.equal(models[0].contextWindow, 1_000_000);
+    const free = models.find((m) => m.id === "anthropic/claude-test");
+    assert.equal(free?.provider, "cline-pass");
+    assert.deepEqual(free?.cost, { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
   } finally {
     rmSync(agentDir, { recursive: true, force: true });
   }

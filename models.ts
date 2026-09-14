@@ -143,7 +143,7 @@ export async function refreshModelCatalog(
   try {
     const [catalogResult, recommendedResult] = await Promise.allSettled([
       getJson<{ data?: CatalogEntry[] }>(fetcher, MODELS_URL, signal),
-      getJson<{ clinePass?: RecommendedEntry[] }>(fetcher, RECOMMENDED_URL, signal),
+      getJson<{ clinePass?: RecommendedEntry[]; free?: RecommendedEntry[] }>(fetcher, RECOMMENDED_URL, signal),
     ]);
     const catalog = catalogResult.status === "fulfilled" ? catalogResult.value.data ?? [] : [];
     const recommended = recommendedResult.status === "fulfilled" ? recommendedResult.value : {};
@@ -157,7 +157,7 @@ export async function refreshModelCatalog(
     );
     const seeds = [
       ...new Map(
-        (recommended.clinePass ?? []).flatMap((entry) => {
+        [...(recommended.clinePass ?? []), ...(recommended.free ?? [])].flatMap((entry) => {
           if (!entry.id) return [];
           const seed = PASS_FALLBACK.find((model) => model.id === entry.id);
           return [[entry.id, {
